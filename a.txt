@@ -1,15 +1,6 @@
 Makefile
 README
-a.txt
-main.c
-main.o
-output.txt
-parse.c
-parse.h
-parse.o
-ush
-Makefile
-README
+README.md
 a.txt
 main.c
 main.o

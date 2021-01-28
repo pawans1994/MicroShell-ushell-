@@ -34,7 +34,7 @@ static void exCmd(char cmd[1024], char  **cmdArgs, char *out_file, int fd, char 
                 if (fd != 0)
                 {
                     if (strcmp(flag, "a") == 0) {
-                        file_desc = open(out_file, O_RDWR | O_APPEND, 664);
+                        file_desc = open(out_file, O_RDWR | O_APPEND | O_CREAT, 664);
                     }
                     if (strcmp(flag, "w") == 0) {
                         file_desc = open(out_file, O_WRONLY | O_CREAT | O_TRUNC, 0666);
