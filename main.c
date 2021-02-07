@@ -14,6 +14,7 @@ int turn_flag = 1;
 int pfd[2];
 int in_desc = 0;
 char *home_dir;
+char *prev_dir;
 
 static int get_file_desc(char *flag, char *out_file)
 {
@@ -109,9 +110,23 @@ static void exCmd(char cmd[1024], char  **cmdArgs, char *out_file, int fd, char 
 static void ch_dir(char *path){
 
     char new_path[1024];
-    if(path == NULL)
+    char *path_slice;
+    path_slice = malloc(sizeof(path) * sizeof(char*));
+    strcpy(path_slice, path);
+    path_slice++;
+    if(path == NULL || !strcmp(path, "~"))
     {
         if(chdir(home_dir) !=0 )
+            perror("Error");
+    }
+    else if(path[0] == '$' && getenv(path_slice)!=NULL)
+    {
+        if(chdir(getenv(path_slice)) != 0)
+            perror("Error");
+    }
+    else if(!strcmp(path, "-"))
+    {
+        if(chdir(getenv("OLDPWD")) != 0)
             perror("Error");
     }
     else if(path[0] != '/'){
@@ -139,7 +154,7 @@ static void prCmd(Cmd c)
     bool isPipe = 0;
     if ( c ) {
         //printf("%s%s ", c->exec == Tamp ? "BG " : "", c->args[0]);
-        if ( !strcmp(c->args[0], "end") )
+        if ( !strcmp(c->args[0], "end") || !strcmp(c->args[0], "logout") )
             exit(0);
         if ( c->in == Tin ) {
             in = 1;
@@ -199,7 +214,8 @@ static void prCmd(Cmd c)
             for ( i = 1; c->args[i] != NULL; i++ ){
                 cmdArgs[i] = malloc(1024* sizeof(char));
                 strcpy(cmdArgs[i], c->args[i]);
-//            printf("%d:%s,", i, c->args[i]);
+//                printf("%d:%s,", i, c->args[i]);
+//                printf("%s", getenv(cmdArgs[i]));
             }
 //      printf("\b]");
         }
@@ -208,7 +224,7 @@ static void prCmd(Cmd c)
         {
             if(strcmp(c->args[0], "where") == 0)
             {
-                strcpy(cmd, "whereis");
+                strcpy(cmd, "which");
             }
             if (strcmp(c->args[0], "cd") == 0) {
                 ch_dir(cmdArgs[1]);
@@ -224,7 +240,7 @@ static void prCmd(Cmd c)
         else {
             if(strcmp(c->args[0], "where") == 0)
             {
-                strcpy(cmd, "whereis");
+                strcpy(cmd, "which");
             }
             if(isPipe == 1) {
                 pipe(pfd);
