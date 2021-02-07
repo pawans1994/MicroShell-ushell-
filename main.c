@@ -4,6 +4,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <pwd.h>
 #include "parse.h"
 
 typedef enum { false, true } bool;
@@ -12,6 +13,22 @@ int last_write = 0;
 int turn_flag = 1;
 int pfd[2];
 int in_desc = 0;
+char *home_dir;
+
+static int get_file_desc(char *flag, char *out_file)
+{
+    int out_desc;
+    if (strcmp(flag, "w") == 0)
+    {
+        out_desc = open(out_file, O_WRONLY | O_CREAT | O_TRUNC, 0666);
+    }
+    else if(strcmp(flag, "a")==0)
+    {
+        out_desc = open(out_file, O_RDWR | O_APPEND | O_CREAT, 0666);
+    }
+
+    return out_desc;
+}
 static void run_pipe(char cmd[1024], char **cmdArgs, int in_desc, int out, bool red_err)
 {
     int sloc;
@@ -61,7 +78,7 @@ static void exCmd(char cmd[1024], char  **cmdArgs, char *out_file, int fd, char 
             if (fd != 0)
             {
                 if (strcmp(flag, "a") == 0) {
-                    file_desc = open(out_file, O_RDWR | O_APPEND | O_CREAT, 664);
+                    file_desc = open(out_file, O_RDWR | O_APPEND | O_CREAT, 0666);
                 }
                 if (strcmp(flag, "w") == 0) {
                     file_desc = open(out_file, O_WRONLY | O_CREAT | O_TRUNC, 0666);
@@ -89,10 +106,15 @@ static void exCmd(char cmd[1024], char  **cmdArgs, char *out_file, int fd, char 
 
 }
 
-static void ch_dir(char *cmd,  char *path){
+static void ch_dir(char *path){
 
     char new_path[1024];
-    if(path[0] != '/'){
+    if(path == NULL)
+    {
+        if(chdir(home_dir) !=0 )
+            perror("Error");
+    }
+    else if(path[0] != '/'){
         getcwd(new_path, sizeof(new_path));
         strcat(new_path, "/");
         strcat(new_path, path);
@@ -184,8 +206,12 @@ static void prCmd(Cmd c)
         //Executing the command
         if(pipe_flag == 0)
         {
+            if(strcmp(c->args[0], "where") == 0)
+            {
+                strcpy(cmd, "whereis");
+            }
             if (strcmp(c->args[0], "cd") == 0) {
-                ch_dir(cmd, cmdArgs[1]);
+                ch_dir(cmdArgs[1]);
             }
             else{
 //        {   printf("%s", cmd);
@@ -196,6 +222,10 @@ static void prCmd(Cmd c)
             }
         }
         else {
+            if(strcmp(c->args[0], "where") == 0)
+            {
+                strcpy(cmd, "whereis");
+            }
             if(isPipe == 1) {
                 pipe(pfd);
                 run_pipe(cmd, cmdArgs, in_desc, pfd[1], red_err);
@@ -204,7 +234,10 @@ static void prCmd(Cmd c)
             }
             else
             {
-                run_pipe(cmd, cmdArgs, in_desc, 1, red_err);
+                if(c->outfile !=NULL)
+                    run_pipe(cmd, cmdArgs, in_desc, get_file_desc(flag, c->outfile), red_err);
+                else
+                    run_pipe(cmd, cmdArgs, in_desc, 1, red_err);
                 pipe_flag = 0;
             }
 
@@ -237,9 +270,9 @@ static void prPipe(Pipe p)
 int main(int argc, char *argv[])
 {
     Pipe p;
-
+    if ((home_dir = getenv("HOME")) == NULL) {
+        home_dir = getpwuid(getuid())->pw_dir;}
     char *host = "armadillo";
-
     while ( 1 ) {
         printf("%s%% ", host);
         p = parse();
