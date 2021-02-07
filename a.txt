@@ -1,27 +1,13 @@
-total 184
+total 176
 -rw-r--r--@ 1 pawan  staff   1322 Jan  2  2019 parse.h
 -rw-r--r--@ 1 pawan  staff  12141 Jan  2  2019 parse.c
 -rw-r--r--@ 1 pawan  staff    537 Jan  2  2019 README
 -rw-r--r--  1 pawan  staff  14232 Jan 23 12:31 parse.o
--rw-r--r--  1 pawan  staff     36 Jan 25 23:08 output.txt
 -rw-r--r--  1 pawan  staff     21 Jan 27 13:27 README.md
-drwxr-xr-x  4 pawan  staff    128 Feb  5 20:00 pawan
 -rw-r--r--  1 pawan  staff    102 Feb  6 16:13 grepabd
 -rw-r--r--@ 1 pawan  staff    266 Feb  6 20:46 Makefile
--rw-r--r--@ 1 pawan  staff   5515 Feb  6 22:04 main.c
--rw-r--r--  1 pawan  staff  10204 Feb  6 22:04 main.o
--rwxr-xr-x  1 pawan  staff  20420 Feb  6 22:04 ush
--rw-r--r--  1 pawan  staff      0 Feb  6 22:05 a.txt
-Makefile
-README
-README.md
-a.txt
-grepabd
-main.c
-main.o
-output.txt
-parse.c
-parse.h
-parse.o
-pawan
-ush
+-rw-r--r--@ 1 pawan  staff   6034 Feb  6 22:49 main.c
+-rw-r--r--  1 pawan  staff  10236 Feb  6 22:49 main.o
+-rwxr-xr-x  1 pawan  staff  20372 Feb  6 22:49 ush
+drwxr-xr-x  2 pawan  staff     64 Feb  6 22:50 pawan
+-rw-r--r--  1 pawan  staff      0 Feb  6 22:50 a.txt
