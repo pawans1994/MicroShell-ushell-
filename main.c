@@ -15,6 +15,7 @@ int pfd[2];
 int in_desc = 0;
 char *home_dir;
 char *prev_dir;
+char *temp;
 
 static int get_file_desc(char *flag, char *out_file)
 {
@@ -51,7 +52,12 @@ static void run_pipe(char cmd[1024], char **cmdArgs, int in_desc, int out, bool 
             close(out);
         }
 
-        execvp(cmd, cmdArgs);
+        if (execvp(cmd, cmdArgs) != 0)
+        {
+            perror("Error");
+            exit(1);
+        }
+
     }
     else{
         waitpid(child_p, &sloc, WUNTRACED);
@@ -95,9 +101,12 @@ static void exCmd(char cmd[1024], char  **cmdArgs, char *out_file, int fd, char 
             }
         }
 
-        execvp(cmd, cmdArgs);
-//        perror("execvp");
-//        exit(1);
+        if(execvp(cmd, cmdArgs) != 0)
+        {
+            perror("execvp");
+            exit(1);
+        }
+
     }
     else
     {
@@ -108,6 +117,7 @@ static void exCmd(char cmd[1024], char  **cmdArgs, char *out_file, int fd, char 
 }
 
 static void ch_dir(char *path){
+
 
     char new_path[1024];
     char *path_slice;
@@ -126,8 +136,12 @@ static void ch_dir(char *path){
     }
     else if(!strcmp(path, "-"))
     {
-        if(chdir(getenv("OLDPWD")) != 0)
-            perror("Error");
+        if (prev_dir == NULL)
+            printf("NO PREVIOUS DIRECTORY\n");
+        else {
+            if (chdir(prev_dir) != 0)
+                perror("Error");
+        }
     }
     else if(path[0] != '/'){
         getcwd(new_path, sizeof(new_path));
@@ -140,6 +154,7 @@ static void ch_dir(char *path){
         if(chdir(path) != 0)
             perror("Error");
     }
+
 }
 
 static void prCmd(Cmd c)
@@ -152,6 +167,8 @@ static void prCmd(Cmd c)
     int in;
     bool red_err = 0;
     bool isPipe = 0;
+//    prev_dir = malloc(1024 * sizeof(char*));
+//    temp = prev_dir = malloc(1024 * sizeof(char*));
     if ( c ) {
         //printf("%s%s ", c->exec == Tamp ? "BG " : "", c->args[0]);
         if ( !strcmp(c->args[0], "end") || !strcmp(c->args[0], "logout") )
@@ -227,7 +244,10 @@ static void prCmd(Cmd c)
                 strcpy(cmd, "which");
             }
             if (strcmp(c->args[0], "cd") == 0) {
+
                 ch_dir(cmdArgs[1]);
+                prev_dir = (char*)malloc(1024);
+                strcpy(prev_dir, temp);
             }
             else{
 //        {   printf("%s", cmd);
@@ -288,8 +308,11 @@ int main(int argc, char *argv[])
     Pipe p;
     if ((home_dir = getenv("HOME")) == NULL) {
         home_dir = getpwuid(getuid())->pw_dir;}
+
     char *host = "armadillo";
     while ( 1 ) {
+        temp = (char*)malloc(1024);
+        getcwd(temp,1024);
         printf("%s%% ", host);
         p = parse();
         prPipe(p);
