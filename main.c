@@ -12,7 +12,7 @@ int last_write = 0;
 int turn_flag = 1;
 int pfd[2];
 int in_desc = 0;
-static void run_pipe(char cmd[1024], char **cmdArgs, int in_desc, int out)
+static void run_pipe(char cmd[1024], char **cmdArgs, int in_desc, int out, bool red_err)
 {
     int sloc;
     pid_t child_p;
@@ -27,6 +27,8 @@ static void run_pipe(char cmd[1024], char **cmdArgs, int in_desc, int out)
         }
         if(out != 1)
         {
+            if(red_err == 1)
+                dup2(out, 2);
             dup2(out, 1);
             close(out);
         }
@@ -37,7 +39,7 @@ static void run_pipe(char cmd[1024], char **cmdArgs, int in_desc, int out)
         waitpid(child_p, &sloc, WUNTRACED);
     }
 }
-static void exCmd(char cmd[1024], char  **cmdArgs, char *out_file, int fd, char *flag, int n){
+static void exCmd(char cmd[1024], char  **cmdArgs, char *out_file, int fd, char *flag, int n, bool red_err){
     pid_t c_pid;
     int stat_loc;
     c_pid = fork();
@@ -69,6 +71,8 @@ static void exCmd(char cmd[1024], char  **cmdArgs, char *out_file, int fd, char 
                     exit(0);
                 }
                 dup2(file_desc, 1);
+                if(red_err == 1)
+                    dup2(file_desc, 2);
                 close(file_desc);
             }
         }
@@ -109,6 +113,7 @@ static void prCmd(Cmd c)
     int fd = 0;
     char *flag;
     int in;
+    bool red_err = 0;
     bool isPipe = 0;
     if ( c ) {
         //printf("%s%s ", c->exec == Tamp ? "BG " : "", c->args[0]);
@@ -135,13 +140,15 @@ static void prCmd(Cmd c)
                     break;
                 case ToutErr:
                     //printf(">&(%s) ", c->outfile);
-                    fd = 2;
+                    fd = 1;
+                    red_err = 1;
                     flag = malloc(10*sizeof (char*));
                     strcpy(flag, "w");
                     break;
                 case TappErr:
                     //printf(">>&(%s) ", c->outfile);
-                    fd = 2;
+                    fd = 1;
+                    red_err = 1;
                     strcpy(flag, "a");
                     break;
                 case Tpipe:
@@ -151,6 +158,9 @@ static void prCmd(Cmd c)
                     break;
                 case TpipeErr:
                     //printf("|& ");
+                    isPipe = 1;
+                    pipe_flag = 1;
+                    red_err = 1;
                     break;
                 default:
                     fprintf(stderr, "Shouldn't get here\n");
@@ -180,21 +190,21 @@ static void prCmd(Cmd c)
             else{
 //        {   printf("%s", cmd);
                 if (in == 0)
-                    exCmd(cmd, cmdArgs, c->outfile, fd, flag, in);
+                    exCmd(cmd, cmdArgs, c->outfile, fd, flag, in, red_err);
                 else
-                    exCmd(cmd, cmdArgs, c->infile, fd, flag, in);
+                    exCmd(cmd, cmdArgs, c->infile, fd, flag, in, red_err);
             }
         }
         else {
             if(isPipe == 1) {
                 pipe(pfd);
-                run_pipe(cmd, cmdArgs, in_desc, pfd[1]);
+                run_pipe(cmd, cmdArgs, in_desc, pfd[1], red_err);
                 close(pfd[1]);
                 in_desc = pfd[0];
             }
             else
             {
-                run_pipe(cmd, cmdArgs, in_desc, 1);
+                run_pipe(cmd, cmdArgs, in_desc, 1, red_err);
                 pipe_flag = 0;
             }
 
