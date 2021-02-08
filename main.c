@@ -243,6 +243,9 @@ static void prCmd(Cmd c)
 //      printf("\b]");
         }
         //Executing the command
+        char **echo_args;
+        echo_args = malloc(MAX_SIZE* sizeof(char));
+
         if(pipe_flag == 0)
         {
 
@@ -255,6 +258,18 @@ static void prCmd(Cmd c)
                 ch_dir(cmdArgs[1]);
                 prev_dir = (char*)malloc(MAX_SIZE);
                 strcpy(prev_dir, temp);
+            }
+            else if(!strcmp(c->args[0], "setenv"))
+            {
+                char *temp = cmdArgs[1];
+                temp++;
+                setenv(temp, cmdArgs[2], 1);
+            }
+            else if(!strcmp(c->args[0], "unsetenv"))
+            {
+                char *temp = cmdArgs[1];
+                temp++;
+                unsetenv(temp);
             }
             else if(strcmp(c->args[0], "echo") == 0)
             {
@@ -286,6 +301,28 @@ static void prCmd(Cmd c)
         }
         else {
 
+            if(!strcmp(c->args[0], "echo"))
+            {
+                echo_args[0] = malloc(MAX_SIZE* sizeof(char));
+                strcpy(echo_args[0], cmdArgs[0]);
+                int i;
+                for(i = 1;cmdArgs[i]!=NULL;i++)
+                {
+                    echo_args[i] = malloc(MAX_SIZE* sizeof(char));
+                    if (cmdArgs[i][0] == '$')
+                    {
+                        char *temp = cmdArgs[i];
+                        temp++;
+                        strcpy(echo_args[i], getenv(temp));
+                    }
+                    else
+                    {
+                        strcpy(echo_args[i], cmdArgs[i]);
+                    }
+                    cmdArgs = echo_args;
+                }
+
+            }
             if(strcmp(c->args[0], "where") == 0)
             {
                 strcpy(cmd, "which");
@@ -335,10 +372,10 @@ static void getInputFromFile(Pipe p)
 {
     char *path;
     path = (char*)malloc(MAX_SIZE);
-//    strcat(path, getenv("HOME"));
-//    strcat(path, "/.ushrc");
+    strcat(path, getenv("HOME"));
+    strcat(path, "/.ushrc");
     int fp;
-    fp = open(".ushrc", O_RDONLY);
+    fp = open(path, O_RDONLY);
     if (fp == -1) {
         printf("Error Reading the File");
         exit(1);
@@ -346,8 +383,8 @@ static void getInputFromFile(Pipe p)
     dup2(fp, 0);
     p = parse();
     if(p && (strcmp(p->head->args[0], "end")!=0)) {
-     prPipe(p);
-     freePipe(p);
+        prPipe(p);
+        freePipe(p);
     }
 
 }
@@ -356,18 +393,7 @@ int main(int argc, char *argv[])
 {
     Pipe p;
     char *host = "armadello";
-    int sin = dup(0);
 //    getInputFromFile(p);
-//    freePipe(p);
-    int fp;
-
-//    fp = open(".ushrc", O_RDONLY);
-//    dup2(fp, 0);
-//    close(fp);
-//    p = parse();
-//    prPipe(p);
-//    freePipe(p);
-//    dup2(sin, 0);
     while ( 1 ) {
         printf("%s%% ", host);
         temp = (char*)malloc(MAX_SIZE);

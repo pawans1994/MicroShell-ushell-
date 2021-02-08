@@ -1,0 +1,14 @@
+total 208
+-rw-r--r--@ 1 pawan  staff   1322 Jan  2  2019 parse.h
+-rw-r--r--@ 1 pawan  staff  12141 Jan  2  2019 parse.c
+-rw-r--r--@ 1 pawan  staff    537 Jan  2  2019 README
+-rw-r--r--  1 pawan  staff  14232 Jan 23 12:31 parse.o
+-rw-r--r--  1 pawan  staff     21 Jan 27 13:27 README.md
+-rw-r--r--  1 pawan  staff    102 Feb  6 16:13 grepabd
+-rw-r--r--@ 1 pawan  staff    266 Feb  6 20:46 Makefile
+drwxr-xr-x  2 pawan  staff     64 Feb  7 19:38 pawan
+-rw-r--r--  1 pawan  staff     25 Feb  7 22:06 cy.txt
+-rw-r--r--@ 1 pawan  staff  10326 Feb  7 23:10 main.c
+-rw-r--r--  1 pawan  staff  15360 Feb  7 23:10 main.o
+-rwxr-xr-x  1 pawan  staff  20892 Feb  7 23:10 ush
+-rw-r--r--  1 pawan  staff      0 Feb  7 23:10 a.txt
