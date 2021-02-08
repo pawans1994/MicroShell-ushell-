@@ -173,7 +173,7 @@ static void prCmd(Cmd c)
 //    prev_dir = malloc(1024 * sizeof(char*));
 //    temp = prev_dir = malloc(1024 * sizeof(char*));
     if ( c ) {
-        //printf("%s%s ", c->exec == Tamp ? "BG " : "", c->args[0]);
+//        printf("%s%s ", c->exec == Tamp ? "BG " : "", c->args[0]);
         if ( !strcmp(c->args[0], "end") || !strcmp(c->args[0], "logout") )
             exit(0);
         if ( c->in == Tin ) {
@@ -245,16 +245,37 @@ static void prCmd(Cmd c)
         //Executing the command
         if(pipe_flag == 0)
         {
+
             if(strcmp(c->args[0], "where") == 0)
             {
                 strcpy(cmd, "which");
             }
-            if (strcmp(c->args[0], "cd") == 0) {
+            else if (strcmp(c->args[0], "cd") == 0) {
 
                 ch_dir(cmdArgs[1]);
                 prev_dir = (char*)malloc(MAX_SIZE);
                 strcpy(prev_dir, temp);
             }
+            else if(strcmp(c->args[0], "echo") == 0)
+            {
+                int i;
+                for(i = 1;cmdArgs[i]!=NULL;i++)
+                {
+
+                    if (cmdArgs[i][0] == '$')
+                    {
+                        char *temp = cmdArgs[i];
+                        temp ++;
+                        printf("%s ", getenv(temp));
+                    }
+                    else
+                    {
+                        printf("%s ", cmdArgs[i]);
+                    }
+                }
+                putchar('\n');
+            }
+
             else{
 //        {   printf("%s", cmd);
                 if (in == 0)
@@ -264,6 +285,7 @@ static void prCmd(Cmd c)
             }
         }
         else {
+
             if(strcmp(c->args[0], "where") == 0)
             {
                 strcpy(cmd, "which");
@@ -313,25 +335,20 @@ static void getInputFromFile(Pipe p)
 {
     char *path;
     path = (char*)malloc(MAX_SIZE);
-    strcat(path, getenv("HOME"));
-    strcat(path, "/.ushrc");
+//    strcat(path, getenv("HOME"));
+//    strcat(path, "/.ushrc");
     int fp;
-    fp = open(path, O_RDONLY);
-    int stdin = dup(0);
+    fp = open(".ushrc", O_RDONLY);
     if (fp == -1) {
         printf("Error Reading the File");
         exit(1);
     }
     dup2(fp, 0);
     p = parse();
-    if(p && !strcmp(p->head->args[0], "end"))
-    {
-        dup2(stdin, 0);
+    if(p && (strcmp(p->head->args[0], "end")!=0)) {
+     prPipe(p);
+     freePipe(p);
     }
-    else{
-        prPipe(p);
-    }
-
 
 }
 
@@ -339,8 +356,18 @@ int main(int argc, char *argv[])
 {
     Pipe p;
     char *host = "armadello";
+    int sin = dup(0);
 //    getInputFromFile(p);
 //    freePipe(p);
+    int fp;
+
+//    fp = open(".ushrc", O_RDONLY);
+//    dup2(fp, 0);
+//    close(fp);
+//    p = parse();
+//    prPipe(p);
+//    freePipe(p);
+//    dup2(sin, 0);
     while ( 1 ) {
         printf("%s%% ", host);
         temp = (char*)malloc(MAX_SIZE);
@@ -348,6 +375,7 @@ int main(int argc, char *argv[])
         p = parse();
         prPipe(p);
         freePipe(p);
+
     }
 }
 

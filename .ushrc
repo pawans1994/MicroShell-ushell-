@@ -1,0 +1,3 @@
+ls
+ls -ltr
+ls -ltr | wc
