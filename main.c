@@ -17,6 +17,7 @@ int in_desc = 0;
 char *home_dir;
 char *prev_dir;
 char *temp;
+char *project_dir;
 
 
 static int get_file_desc(char *flag, char *out_file)
@@ -120,15 +121,15 @@ static void exCmd(char cmd[MAX_SIZE], char  **cmdArgs, char *in_file, char *out_
 
 static void ch_dir(char *path){
 
-
     char new_path[MAX_SIZE];
     char *path_slice;
     path_slice = malloc(sizeof(path) * sizeof(char*));
     strcpy(path_slice, path);
     path_slice++;
-    if(path == NULL || !strcmp(path, "~"))
+
+    if(path[0] == '\0')
     {
-        if(chdir(home_dir) !=0 )
+        if(chdir(project_dir) !=0 )
             perror("Error");
     }
     else if(path[0] == '$' && getenv(path_slice)!=NULL)
@@ -145,10 +146,18 @@ static void ch_dir(char *path){
                 perror("Error");
         }
     }
-    else if(path[0] != '/'){
+    else if(path[0] != '/' && path[0]!='~'){
         getcwd(new_path, sizeof(new_path));
         strcat(new_path, "/");
         strcat(new_path, path);
+        if(chdir(new_path) != 0)
+            perror("Error");
+    }
+    else if(path[0] == '~'){
+        char *temp = path;
+        temp++;
+        strcpy(new_path, home_dir);
+        strcat(new_path, temp);
         if(chdir(new_path) != 0)
             perror("Error");
     }
@@ -252,24 +261,31 @@ static void prCmd(Cmd c)
             if(strcmp(c->args[0], "where") == 0)
             {
                 strcpy(cmd, "which");
+                if (in == 0)
+                    exCmd(cmd, cmdArgs, c->infile,c->outfile, fd, flag, in, out, red_err);
+                else
+                    exCmd(cmd, cmdArgs, c->infile, c->outfile,fd, flag, in, out, red_err);
             }
             else if (strcmp(c->args[0], "cd") == 0) {
 
-                ch_dir(cmdArgs[1]);
+                if(cmdArgs[1] == NULL)
+                    ch_dir("");
+                else
+                    ch_dir(cmdArgs[1]);
                 prev_dir = (char*)malloc(MAX_SIZE);
                 strcpy(prev_dir, temp);
             }
             else if(!strcmp(c->args[0], "setenv"))
             {
-                char *temp = cmdArgs[1];
-                temp++;
-                setenv(temp, cmdArgs[2], 1);
+//                char *temp = cmdArgs[1];
+//                temp++;
+                setenv(cmdArgs[1], cmdArgs[2], 1);
             }
             else if(!strcmp(c->args[0], "unsetenv"))
             {
-                char *temp = cmdArgs[1];
-                temp++;
-                unsetenv(temp);
+//                char *temp = cmdArgs[1];
+//                temp++;
+                unsetenv(cmdArgs[1]);
             }
             else if(strcmp(c->args[0], "echo") == 0)
             {
@@ -319,7 +335,11 @@ static void prCmd(Cmd c)
                     {
                         strcpy(echo_args[i], cmdArgs[i]);
                     }
-                    cmdArgs = echo_args;
+                    int j;
+                    for(j = 1;echo_args[j]!=NULL;j++)
+                    {
+                        strcpy(cmdArgs[j], echo_args[j]);
+                    }
                 }
 
             }
@@ -368,8 +388,9 @@ static void prPipe(Pipe p)
     prPipe(p->next);
 }
 
-static void getInputFromFile(Pipe p)
+static void getInputFromFile()
 {
+    Pipe p;
     char *path;
     path = (char*)malloc(MAX_SIZE);
     strcat(path, getenv("HOME"));
@@ -381,28 +402,46 @@ static void getInputFromFile(Pipe p)
         exit(1);
     }
     dup2(fp, 0);
-    p = parse();
-    if(p && (strcmp(p->head->args[0], "end")!=0)) {
+
+    while(1) {
+        p = parse();
+        if (p == NULL || !strcmp(p->head->args[0], "end")) {
+            close(fp);
+            exit(0);
+        }
         prPipe(p);
         freePipe(p);
     }
-
 }
 
 int main(int argc, char *argv[])
 {
+
     Pipe p;
     char *host = "armadello";
-//    getInputFromFile(p);
-    while ( 1 ) {
-        printf("%s%% ", host);
-        temp = (char*)malloc(MAX_SIZE);
-        getcwd(temp,MAX_SIZE);
-        p = parse();
-        prPipe(p);
-        freePipe(p);
 
+    if ((home_dir = getenv("HOME")) == NULL) {
+        home_dir = getpwuid(getuid())->pw_dir;}
+    project_dir = (char*)malloc(MAX_SIZE);
+    getcwd(project_dir, MAX_SIZE);
+    pid_t cmd;
+    cmd = fork();
+    if(cmd ==0){
+        getInputFromFile();
     }
+    else{
+        dup2(dup(0),0);
+        while ( 1 ) {
+            printf("%s%% ", host);
+            temp = (char*)malloc(MAX_SIZE);
+            getcwd(temp,MAX_SIZE);
+            p = parse();
+            prPipe(p);
+            freePipe(p);
+
+        }
+    }
+
 }
 
 /*........................ end of main.c ....................................*/
