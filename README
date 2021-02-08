@@ -18,4 +18,11 @@ To use in your program, you must include parse.h and call the function
 parse(), which return a Pipe data structure.  (See main.c)  The Pipe
 contains all the information in a line of input to a shell.
 
-
+Steps to Execute the Program
+===========================
+1. Go the project directory
+2. Run Command : make ush
+3. Then run command: ./ush
+4. It will run the inputs from .ushrc file in home directory.
+5. Click enter to get the prompt.
+6. You should see the prompt: armadello%
