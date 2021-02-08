@@ -7,6 +7,7 @@
 #include <pwd.h>
 #include "parse.h"
 
+#define MAX_SIZE 1024
 typedef enum { false, true } bool;
 int pipe_flag = 0;
 int last_write = 0;
@@ -16,6 +17,7 @@ int in_desc = 0;
 char *home_dir;
 char *prev_dir;
 char *temp;
+
 
 static int get_file_desc(char *flag, char *out_file)
 {
@@ -31,7 +33,7 @@ static int get_file_desc(char *flag, char *out_file)
 
     return out_desc;
 }
-static void run_pipe(char cmd[1024], char **cmdArgs, int in_desc, int out, bool red_err)
+static void run_pipe(char cmd[MAX_SIZE], char **cmdArgs, int in_desc, int out, bool red_err)
 {
     int sloc;
     pid_t child_p;
@@ -63,7 +65,7 @@ static void run_pipe(char cmd[1024], char **cmdArgs, int in_desc, int out, bool 
         waitpid(child_p, &sloc, WUNTRACED);
     }
 }
-static void exCmd(char cmd[1024], char  **cmdArgs, char *out_file, int fd, char *flag, int n, bool red_err){
+static void exCmd(char cmd[MAX_SIZE], char  **cmdArgs, char *out_file, int fd, char *flag, int n, int o, bool red_err){
     pid_t c_pid;
     int stat_loc;
     c_pid = fork();
@@ -80,7 +82,7 @@ static void exCmd(char cmd[1024], char  **cmdArgs, char *out_file, int fd, char 
             dup2(file_desc, STDIN_FILENO);
             close(file_desc);
         }
-        else
+        if(o == 1)
         {
             if (fd != 0)
             {
@@ -119,7 +121,7 @@ static void exCmd(char cmd[1024], char  **cmdArgs, char *out_file, int fd, char 
 static void ch_dir(char *path){
 
 
-    char new_path[1024];
+    char new_path[MAX_SIZE];
     char *path_slice;
     path_slice = malloc(sizeof(path) * sizeof(char*));
     strcpy(path_slice, path);
@@ -160,13 +162,14 @@ static void ch_dir(char *path){
 static void prCmd(Cmd c)
 {
     int i;
-    char cmd[1024];
+    char cmd[MAX_SIZE];
     char **cmdArgs;
     int fd = 0;
     char *flag;
-    int in;
+    int in = 0;
     bool red_err = 0;
     bool isPipe = 0;
+    int out = 0;
 //    prev_dir = malloc(1024 * sizeof(char*));
 //    temp = prev_dir = malloc(1024 * sizeof(char*));
     if ( c ) {
@@ -175,13 +178,16 @@ static void prCmd(Cmd c)
             exit(0);
         if ( c->in == Tin ) {
             in = 1;
-            //printf("<(%s) ", c->infile);
+            printf("<(%s) ", c->infile);
         }
         if ( c->out != Tnil )
-        {   in = 0;
+        {   //in = 0;
+            out= 1;
+            if(in != 1)
+                in = 0;
             switch ( c->out ) {
                 case Tout:
-                    //printf(">(%s) ", c->outfile);
+                    printf(">(%s) ", c->outfile);
                     fd = 1;
                     flag = malloc(10*sizeof (char*));
                     strcpy(flag, "w");
@@ -221,15 +227,15 @@ static void prCmd(Cmd c)
                     exit(-1);
             }}
         //Writing the commands from data structure and it's arguments to variable cmd and cmdArgs
-        cmdArgs = malloc(1024 * sizeof(char*));
+        cmdArgs = malloc(MAX_SIZE * sizeof(char*));
         strcpy(cmd, c->args[0]);
-        cmdArgs[0] = malloc(1024* sizeof(char));
+        cmdArgs[0] = malloc(MAX_SIZE* sizeof(char));
         strcpy(cmdArgs[0], c->args[0]);
         if ( c->nargs > 1 ) {
 
 //      printf("[");
             for ( i = 1; c->args[i] != NULL; i++ ){
-                cmdArgs[i] = malloc(1024* sizeof(char));
+                cmdArgs[i] = malloc(MAX_SIZE* sizeof(char));
                 strcpy(cmdArgs[i], c->args[i]);
 //                printf("%d:%s,", i, c->args[i]);
 //                printf("%s", getenv(cmdArgs[i]));
@@ -246,15 +252,15 @@ static void prCmd(Cmd c)
             if (strcmp(c->args[0], "cd") == 0) {
 
                 ch_dir(cmdArgs[1]);
-                prev_dir = (char*)malloc(1024);
+                prev_dir = (char*)malloc(MAX_SIZE);
                 strcpy(prev_dir, temp);
             }
             else{
 //        {   printf("%s", cmd);
                 if (in == 0)
-                    exCmd(cmd, cmdArgs, c->outfile, fd, flag, in, red_err);
+                    exCmd(cmd, cmdArgs, c->outfile, fd, flag, in, out, red_err);
                 else
-                    exCmd(cmd, cmdArgs, c->infile, fd, flag, in, red_err);
+                    exCmd(cmd, cmdArgs, c->infile, fd, flag, in, out, red_err);
             }
         }
         else {
@@ -303,17 +309,42 @@ static void prPipe(Pipe p)
     prPipe(p->next);
 }
 
+static void getInputFromFile(Pipe p)
+{
+    char *path;
+    path = (char*)malloc(MAX_SIZE);
+    strcat(path, getenv("HOME"));
+    strcat(path, "/.ushrc");
+    int fp;
+    fp = open(path, O_RDONLY);
+    int stdin = dup(0);
+    if (fp == -1) {
+        printf("Error Reading the File");
+        exit(1);
+    }
+    dup2(fp, 0);
+    p = parse();
+    if(p && !strcmp(p->head->args[0], "end"))
+    {
+        dup2(stdin, 0);
+    }
+    else{
+        prPipe(p);
+    }
+
+
+}
+
 int main(int argc, char *argv[])
 {
     Pipe p;
-    if ((home_dir = getenv("HOME")) == NULL) {
-        home_dir = getpwuid(getuid())->pw_dir;}
-
-    char *host = "armadillo";
+    char *host = "armadello";
+//    getInputFromFile(p);
+//    freePipe(p);
     while ( 1 ) {
-        temp = (char*)malloc(1024);
-        getcwd(temp,1024);
         printf("%s%% ", host);
+        temp = (char*)malloc(MAX_SIZE);
+        getcwd(temp,MAX_SIZE);
         p = parse();
         prPipe(p);
         freePipe(p);
