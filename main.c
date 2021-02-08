@@ -65,7 +65,7 @@ static void run_pipe(char cmd[MAX_SIZE], char **cmdArgs, int in_desc, int out, b
         waitpid(child_p, &sloc, WUNTRACED);
     }
 }
-static void exCmd(char cmd[MAX_SIZE], char  **cmdArgs, char *out_file, int fd, char *flag, int n, int o, bool red_err){
+static void exCmd(char cmd[MAX_SIZE], char  **cmdArgs, char *in_file, char *out_file, int fd, char *flag, int n, int o, bool red_err){
     pid_t c_pid;
     int stat_loc;
     c_pid = fork();
@@ -74,7 +74,7 @@ static void exCmd(char cmd[MAX_SIZE], char  **cmdArgs, char *out_file, int fd, c
     {
         if (n == 1)
         {
-            file_desc = open(out_file, O_RDONLY, 644);
+            file_desc = open(in_file, O_RDONLY, 644);
             if(file_desc < 0){
                 perror("Couldn't open file");
                 exit(0);
@@ -178,7 +178,7 @@ static void prCmd(Cmd c)
             exit(0);
         if ( c->in == Tin ) {
             in = 1;
-            printf("<(%s) ", c->infile);
+//            printf("<(%s) ", c->infile);
         }
         if ( c->out != Tnil )
         {   //in = 0;
@@ -187,7 +187,7 @@ static void prCmd(Cmd c)
                 in = 0;
             switch ( c->out ) {
                 case Tout:
-                    printf(">(%s) ", c->outfile);
+//                    printf(">(%s) ", c->outfile);
                     fd = 1;
                     flag = malloc(10*sizeof (char*));
                     strcpy(flag, "w");
@@ -258,9 +258,9 @@ static void prCmd(Cmd c)
             else{
 //        {   printf("%s", cmd);
                 if (in == 0)
-                    exCmd(cmd, cmdArgs, c->outfile, fd, flag, in, out, red_err);
+                    exCmd(cmd, cmdArgs, c->infile,c->outfile, fd, flag, in, out, red_err);
                 else
-                    exCmd(cmd, cmdArgs, c->infile, fd, flag, in, out, red_err);
+                    exCmd(cmd, cmdArgs, c->infile, c->outfile,fd, flag, in, out, red_err);
             }
         }
         else {
